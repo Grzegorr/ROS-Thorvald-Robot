@@ -1,0 +1,30 @@
+<launch>
+	
+	<!-- Launching the gazebo simulation -->
+	<include file="$(find uol_cmp9767m_base)/launch/thorvald-sim.launch" >
+		<!-- Setting fake localization to false, so the amcl can do the localization -->
+		<arg name="fake_localisation" value="false" />
+		<!-- This arguments sets either simple or realistic environment -->
+		<arg name="obstacles" value="false" />
+		<!-- This argument enables 2nd robot -->
+		<arg name="second_robot" value="false" />
+		<!-- This argument enables fake map provided by gaebo -->
+		<arg name="map_server" value="true" />
+	</include>
+
+	<!-- Running AMCL -->
+	<include file="$(find uol_cmp9767m_tutorial)/launch/amcl.launch" />
+
+	<!-- Running base_move node -->
+	<include file="$(find uol_cmp9767m_tutorial)/launch/move_base.launch" />
+	
+
+        <!-- Run the week 2 controller 
+        <node name="controller" pkg="ROS" type="controller_week2.py" />
+	-->
+
+
+</launch>
+
+
+

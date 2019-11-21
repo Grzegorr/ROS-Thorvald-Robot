@@ -1,0 +1,2 @@
+CMP9767M/uol_cmp9767m_base:CMP9767M/uol_cmp9767m_tutorial:ROS:my_openCV
+-DCATKIN_DEVEL_PREFIX=/home/grzegorz/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/grzegorz/catkin_ws/install -G Unix Makefiles

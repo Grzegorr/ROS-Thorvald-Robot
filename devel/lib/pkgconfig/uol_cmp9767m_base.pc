@@ -1,0 +1,8 @@
+prefix=/home/grzegorz/catkin_ws/devel
+
+Name: uol_cmp9767m_base
+Description: Description of uol_cmp9767m_base
+Version: 0.5.2
+Cflags: -I/usr/include -I/usr/include/gazebo-8 -I/usr/include/bullet -I/usr/include/simbody -I/usr/include/sdformat-5.3 -I/usr/include/ignition/math3 -I/usr/include/OGRE -I/usr/include/OGRE/Terrain -I/usr/include/OGRE/Paging -I/usr/include/ignition/transport3 -I/usr/include/uuid -I/usr/include/ignition/msgs0
+Libs: -L/home/grzegorz/catkin_ws/devel/lib -lActorCollisionsPlugin
+Requires: roscpp

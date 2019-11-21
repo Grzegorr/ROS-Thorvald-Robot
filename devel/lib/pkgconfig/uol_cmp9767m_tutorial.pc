@@ -1,0 +1,8 @@
+prefix=/home/grzegorz/catkin_ws/devel
+
+Name: uol_cmp9767m_tutorial
+Description: Description of uol_cmp9767m_tutorial
+Version: 0.5.2
+Cflags: -I/home/grzegorz/catkin_ws/devel/include
+Libs: -L/home/grzegorz/catkin_ws/devel/lib 
+Requires: 

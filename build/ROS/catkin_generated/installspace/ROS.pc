@@ -1,0 +1,8 @@
+prefix=/home/grzegorz/catkin_ws/install
+
+Name: ROS
+Description: Description of ROS
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/grzegorz/catkin_ws/install/lib 
+Requires: 
