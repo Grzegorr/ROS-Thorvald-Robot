@@ -10,22 +10,66 @@ import move_base_msgs.msg
 
 class Controller:
     
-    def __init__(self):
+    #Path points, robot will go trough them in this order
+    #They are arguments for publishGoal, look there for reference
+    waypoints = [  ]
+    
+    def __init__(self,  path):
         #publisher to publish this pose
         self.publisher = rospy.Publisher('/move_base/goal', move_base_msgs.msg.MoveBaseActionGoal, queue_size=1,  latch='true')
        ##Listener for the current pose
         ##rospy.Subscriber('/amcl_pose',  geometry_msgs.msg.PoseStamped, self.callback)
+        
+        #Load waypoints depending on a rout cose by the user
+        if path == "Test Path":
+            self.waypoints = [  
+            [5, 5, 0, 0, 0, 0, 1], 
+            [5, -5, 0, 0, 0, 0, 1], 
+            [-5, -5, 0, 0, 0, 0, 1], 
+            [-5, 5, 0, 0, 0, 0, 1], 
+            [0, 0, 0, 0, 0, 0, 1]
+            ]
+            
+        if path == "Grzadki":
+            self.waypoints = [  
+            [7, 0, 0, 0, 0, 0, 1], 
+            [7, -3.75, 0, 0, 0, 1, 0], 
+            [-7, -3.75, 0, 0, 0, 1, 0], 
+            [-7, -2.75, 0, 0, 0, 0, 1], 
+            [7, -2.75, 0, 0, 0, 0, 1], 
+            [7, -0.75, 0, 0, 0, 1, 0], 
+            [-7, -0.75, 0, 0, 0, 1, 0], 
+            [-7, 0.25, 0, 0, 0, 0, 1], 
+            [7, 0.25, 0, 0, 0, 0, 1], 
+            [7, 2.25, 0, 0, 0, 1, 0], 
+            [-7, 2.25, 0, 0, 0, 1, 0], 
+            [-7, 3.25, 0, 0, 0, 0, 1], 
+            [7, 3.25, 0, 0, 0, 0, 1]
+            ]
+            
+        
+    def driveAround(self):
+        #Number of wypoints
+        n = len(self.waypoints)
+        print("There is " + str(n) + " waypoints.")
+        for i in range(0, n):
+            print(i)
+            self.publishGoal(self.waypoints[i][0], self.waypoints[i][1], self.waypoints[i][2], self.waypoints[i][3], self.waypoints[i][4], self.waypoints[i][5], self.waypoints[i][6],  i)
+            print("Waiting to reach the goal.")
+            rospy.wait_for_message('/move_base/result', move_base_msgs.msg.MoveBaseActionResult)
+            print("Goal reached.")
+            
     
-    def publishGoal(self, x, y, z, ortx, orty, ortz, ortw):
+    def publishGoal(self, x, y, z, ortx, orty, ortz, ortw,  i):
         
         goal = move_base_msgs.msg.MoveBaseActionGoal()
         
-        goal.header.seq = 1
+        goal.header.seq = i
         goal.header.stamp = rospy.Time.now()
         goal.header.frame_id = "map"
         
         goal.goal_id.stamp = rospy.Time.now()
-        goal.goal_id.id = "Goal 1"
+        goal.goal_id.id = "Goal " + str(i)
         
         #Making a pose to publish(Goal)
         p1 = geometry_msgs.msg.PoseStamped()
@@ -48,6 +92,6 @@ class Controller:
         
 if __name__ == '__main__':
     rospy.init_node('path_controller')
-    C = Controller()
-    C.publishGoal(0, 0, 0, 0, 0, 0, 1)
+    C = Controller("Grzadki")
+    C.driveAround()
     rospy.spin()
