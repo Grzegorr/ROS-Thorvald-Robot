@@ -47,7 +47,26 @@ class Controller:
             [7, 3.25, 0, 0, 0, 0, 1]
             ]
             
+        if path == "Young Salad Test":
+            self.waypoints = [   
+            [7, -3.75, 0, 0, 0, 1, 0], 
+            [-7, -3.75, 0, 0, 0, 1, 0]
+            ]
+            
+        if path == "Salad Test":
+            self.waypoints = [   
+            [-7, 0.25, 0, 0, 0, 0, 1], 
+            [7, 0.25, 0, 0, 0, 0, 1]
+            ]
         
+        
+        if path == "Onion Test":           
+            self.waypoints = [   
+            [7, -3.75, 0, 0, 0, 1, 0], 
+            [-7, -3.75, 0, 0, 0, 1, 0]
+            ]
+            
+            
     def driveAround(self):
         #Number of wypoints
         n = len(self.waypoints)
@@ -92,6 +111,11 @@ class Controller:
         
 if __name__ == '__main__':
     rospy.init_node('path_controller')
-    C = Controller("Grzadki")
-    C.driveAround()
+    C = Controller("Young Salad Test")
+    while(1):
+        C.driveAround()
     rospy.spin()
+    
+    
+    
+    
