@@ -111,7 +111,7 @@ class Controller:
         
 if __name__ == '__main__':
     rospy.init_node('path_controller')
-    C = Controller("Young Salad Test")
+    C = Controller("Grzadki")
     while(1):
         C.driveAround()
     rospy.spin()
