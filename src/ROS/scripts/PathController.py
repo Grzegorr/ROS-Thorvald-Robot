@@ -3,6 +3,7 @@
 import rospy
 #import math
 #import tf
+import std_msgs.msg
 import geometry_msgs.msg
 import move_base_msgs.msg
 #import std_msgs.msg
@@ -17,53 +18,55 @@ class Controller:
     def __init__(self,  path):
         #publisher to publish this pose
         self.publisher = rospy.Publisher('/move_base/goal', move_base_msgs.msg.MoveBaseActionGoal, queue_size=1,  latch='true')
+        #publisher to publish camera mode
+        self.publisher2 = rospy.Publisher('/camera_mode', std_msgs.msg.String, queue_size=1,  latch='true')
        ##Listener for the current pose
         ##rospy.Subscriber('/amcl_pose',  geometry_msgs.msg.PoseStamped, self.callback)
         
         #Load waypoints depending on a rout cose by the user
         if path == "Test Path":
             self.waypoints = [  
-            [5, 5, 0, 0, 0, 0, 1], 
-            [5, -5, 0, 0, 0, 0, 1], 
-            [-5, -5, 0, 0, 0, 0, 1], 
-            [-5, 5, 0, 0, 0, 0, 1], 
-            [0, 0, 0, 0, 0, 0, 1]
+            [5, 5, 0, 0, 0, 0, 1, "OFF"], 
+            [5, -5, 0, 0, 0, 0, 1, "OFF"], 
+            [-5, -5, 0, 0, 0, 0, 1, "OFF"], 
+            [-5, 5, 0, 0, 0, 0, 1, "OFF"], 
+            [0, 0, 0, 0, 0, 0, 1, "OFF"]
             ]
             
         if path == "Grzadki":
             self.waypoints = [  
-            [7, 0, 0, 0, 0, 0, 1], 
-            [7, -3.75, 0, 0, 0, 1, 0], 
-            [-7, -3.75, 0, 0, 0, 1, 0], 
-            [-7, -2.75, 0, 0, 0, 0, 1], 
-            [7, -2.75, 0, 0, 0, 0, 1], 
-            [7, -0.75, 0, 0, 0, 1, 0], 
-            [-7, -0.75, 0, 0, 0, 1, 0], 
-            [-7, 0.25, 0, 0, 0, 0, 1], 
-            [7, 0.25, 0, 0, 0, 0, 1], 
-            [7, 2.25, 0, 0, 0, 1, 0], 
-            [-7, 2.25, 0, 0, 0, 1, 0], 
-            [-7, 3.25, 0, 0, 0, 0, 1], 
-            [7, 3.25, 0, 0, 0, 0, 1]
+            [7, 0, 0, 0, 0, 0, 1,  "OFF"], 
+            [7, -3.75, 0, 0, 0, 1, 0,  "Young Lettice"], 
+            [-7, -3.75, 0, 0, 0, 1, 0,  "OFF"], 
+            [-7, -2.75, 0, 0, 0, 0, 1,  "Young Lettice"], 
+            [7, -2.75, 0, 0, 0, 0, 1,  "OFF"], 
+            [7, -0.75, 0, 0, 0, 1, 0,  "Grown Lettice"], 
+            [-7, -0.75, 0, 0, 0, 1, 0,  "OFF"], 
+            [-7, 0.25, 0, 0, 0, 0, 1,  "Grown Lettice"], 
+            [7, 0.25, 0, 0, 0, 0, 1,  "OFF"], 
+            [7, 2.25, 0, 0, 0, 1, 0,  "Anion"], 
+            [-7, 2.25, 0, 0, 0, 1, 0,  "OFF"], 
+            [-7, 3.25, 0, 0, 0, 0, 1,  "Anion"], 
+            [7, 3.25, 0, 0, 0, 0, 1,  "OFF"]
             ]
             
         if path == "Young Salad Test":
             self.waypoints = [   
-            [7, -3.75, 0, 0, 0, 1, 0], 
-            [-7, -3.75, 0, 0, 0, 1, 0]
+            [7, -3.75, 0, 0, 0, 1, 0, "OFF"], 
+            [-7, -3.75, 0, 0, 0, 1, 0, "OFF"]
             ]
             
         if path == "Salad Test":
             self.waypoints = [   
-            [-7, 0.25, 0, 0, 0, 0, 1], 
-            [7, 0.25, 0, 0, 0, 0, 1]
+            [-7, 0.25, 0, 0, 0, 0, 1, "OFF"], 
+            [7, 0.25, 0, 0, 0, 0, 1, "OFF"]
             ]
         
         
         if path == "Onion Test":           
             self.waypoints = [   
-            [7, -3.75, 0, 0, 0, 1, 0], 
-            [-7, -3.75, 0, 0, 0, 1, 0]
+            [7, -3.75, 0, 0, 0, 1, 0, "Anion"], 
+            [-7, -3.75, 0, 0, 0, 1, 0,  "Anion"]
             ]
             
             
@@ -76,6 +79,7 @@ class Controller:
             self.publishGoal(self.waypoints[i][0], self.waypoints[i][1], self.waypoints[i][2], self.waypoints[i][3], self.waypoints[i][4], self.waypoints[i][5], self.waypoints[i][6],  i)
             print("Waiting to reach the goal.")
             rospy.wait_for_message('/move_base/result', move_base_msgs.msg.MoveBaseActionResult)
+            self.publisher2.publish(self.waypoints[i][7])
             print("Goal reached.")
             
     
