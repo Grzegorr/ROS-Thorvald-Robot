@@ -36,17 +36,29 @@ class Controller:
         if path == "Grzadki":
             self.waypoints = [  
             [7, 0, 0, 0, 0, 0, 1,  "OFF"], 
-            [7, -3.75, 0, 0, 0, 1, 0,  "Young Lettice"], 
+            [7, -3.75, 0, 0, 0, 1, 0,  "Young Lettice"],
+            [2, -3.75, 0, 0, 0, 1, 0,  "NoChange"], 
+            [-2, -3.75, 0, 0, 0, 1, 0,  "NoChange"], 
             [-7, -3.75, 0, 0, 0, 1, 0,  "OFF"], 
             [-7, -2.75, 0, 0, 0, 0, 1,  "Young Lettice"], 
+            [-2, -2.75, 0, 0, 0, 0, 1,  "NoChange"],
+            [2, -2.75, 0, 0, 0, 0, 1,  "NoChange"],
             [7, -2.75, 0, 0, 0, 0, 1,  "OFF"], 
             [7, -0.75, 0, 0, 0, 1, 0,  "Grown Lettice"], 
+            [2, -0.75, 0, 0, 0, 1, 0,  "NoChange"],
+            [-2, -0.75, 0, 0, 0, 1, 0,  "NoChange"],
             [-7, -0.75, 0, 0, 0, 1, 0,  "OFF"], 
             [-7, 0.25, 0, 0, 0, 0, 1,  "Grown Lettice"], 
+            [-2, 0.25, 0, 0, 0, 0, 1,  "NoChange"],
+            [2, 0.25, 0, 0, 0, 0, 1,  "NoChange"],
             [7, 0.25, 0, 0, 0, 0, 1,  "OFF"], 
             [7, 2.25, 0, 0, 0, 1, 0,  "Anion"], 
+            [2, 2.25, 0, 0, 0, 1, 0,  "NoChange"], 
+            [-2, 2.25, 0, 0, 0, 1, 0, "NoChange"], 
             [-7, 2.25, 0, 0, 0, 1, 0,  "OFF"], 
             [-7, 3.25, 0, 0, 0, 0, 1,  "Anion"], 
+            [-2, 3.25, 0, 0, 0, 0, 1,  "NoChange"], 
+            [2, 3.25, 0, 0, 0, 0, 1,  "NoChange"], 
             [7, 3.25, 0, 0, 0, 0, 1,  "OFF"]
             ]
             
@@ -79,7 +91,8 @@ class Controller:
             self.publishGoal(self.waypoints[i][0], self.waypoints[i][1], self.waypoints[i][2], self.waypoints[i][3], self.waypoints[i][4], self.waypoints[i][5], self.waypoints[i][6],  i)
             print("Waiting to reach the goal.")
             rospy.wait_for_message('/move_base/result', move_base_msgs.msg.MoveBaseActionResult)
-            self.publisher2.publish(self.waypoints[i][7])
+            if self.waypoints[i][7] != "NoChange":
+                self.publisher2.publish(self.waypoints[i][7])
             print("Goal reached.")
             
     
