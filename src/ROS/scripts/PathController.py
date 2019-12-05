@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 #This function is publishing PoseStamped type messages 
+import roslib; roslib.load_manifest('ROS')
+#import std_srvs
 import rospy
 #import math
 #import tf
@@ -8,6 +10,7 @@ import geometry_msgs.msg
 import move_base_msgs.msg
 #import std_msgs.msg
 #from math import atan2, pi
+#import rosservice
 
 class Controller:
     
@@ -94,6 +97,7 @@ class Controller:
             if self.waypoints[i][7] != "NoChange":
                 self.publisher2.publish(self.waypoints[i][7])
             print("Goal reached.")
+            
             
     
     def publishGoal(self, x, y, z, ortx, orty, ortz, ortw,  i):
