@@ -2,10 +2,14 @@
 import rospy
 import std_msgs.msg
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import PointCloud
+from geometry_msgs.msg import Point32
+from geometry_msgs.msg import Transform
 from cv_bridge import CvBridge
 import cv2
 import numpy
 import math
+import tf
 
 class GreenMask:
     detectionMode = "OFF"
@@ -14,14 +18,37 @@ class GreenMask:
     def __init__(self):
         #initialize CV Bridge, this links ROS and OpenCV picture formats
         self.bridge = CvBridge()
-        self.publisher = rospy.Publisher("/thorvald_001/green_masked_camera",  Image,  queue_size = 1)
+        #publisher for the mask if needed
+        #self.publisher = rospy.Publisher("/thorvald_001/green_masked_camera",  Image,  queue_size = 1)
+        #publisher for transform computed at time of capturing a frame
+        self.transPub = rospy.Publisher("/thorvald_001/capture_time_transform",  Transform,  queue_size = 1,  latch='true')
+        #publisher for pointcloud
+        self.pcPub = rospy.Publisher("/thorvald_001/last_frame_points",  PointCloud,  queue_size = 1,  latch='true')
         #Subscribe to an topica carring an image
         self.image_sub = rospy.Subscriber("/thorvald_001/kinect2_camera/hd/image_color_rect", Image, self.callback)
         #Subscribe to a camera mode topic
         self.camera_sub = rospy.Subscriber("/camera_mode", std_msgs.msg.String, self.callback2)
+        #tf listener
+        self.tfListener = tf.TransformListener()
     
     #callback to handle next frame
     def callback(self, data):
+        #Get last frame timestamp
+        self.last_frame_stamp = data.header.stamp
+        (trans,  rot) = self.tfListener.lookupTransform('thorvald_001/kinect2_rgb_optical_frame',  "map", self.last_frame_stamp)
+        transform_to_send = Transform()
+#        transform_to_send.header.stamp = rospy.Time()
+#        transform_to_send.child_frame_id = "thorvald_001/kinect2_rgb_optical_frame"
+#        transform_to_send.header.frame_id = "map"
+        transform_to_send.translation.x = trans[0]
+        transform_to_send.translation.y = trans[1]
+        transform_to_send.translation.z = trans[2]
+        transform_to_send.rotation.x = rot[0]
+        transform_to_send.rotation.y = rot[1]
+        transform_to_send.rotation.z = rot[2]
+        transform_to_send.rotation.w = rot[3]
+        self.transPub.publish(transform_to_send)
+        #print(self.last_frame_stamp)
         #transfer image from ROS file system to openCV file
         cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         if self.detectionMode == "Young Lettice":
@@ -94,7 +121,9 @@ class GreenMask:
         cv2.namedWindow("FinalOutput")
         cv2.imshow("FinalOutput",  cv_image)
         
+        self.whereToSpray(weedMask, cv_image)
         
+    def whereToSpray(self, final_mask, final_image):    
         # Setup SimpleBlobDetector parameters.
         params = cv2.SimpleBlobDetector_Params()
          
@@ -125,18 +154,40 @@ class GreenMask:
         detector = cv2.SimpleBlobDetector_create(params)
  
         # Detect blobs.
-        keypoints = detector.detect(weedMask)
+        keypoints = detector.detect(final_mask)
         #print(keypoints[0])
         points	=	cv2.KeyPoint_convert(keypoints)
-        print(points[0])
+        #These will be points with int values
+        publishable_points = []
         for point in points:
             x = int(point[0])
             y = int(point[1])
-            cv_image	=	cv2.circle(cv_image, (x, y), 10,(150, 0, 150),  thickness = -1)
-        cv2.imshow("Blobs",  cv_image)
-    
-
-   
+            publishable_points.append([x, y])
+            final_image	=	cv2.circle(final_image, (x, y), 10,(150, 0, 150),  thickness = -1)
+        cv2.imshow("Blobs",  final_image)
+        self.publishPointCloud(publishable_points)
+        
+    def publishPointCloud(self, points):
+        points2 = []
+        for point in points:
+            #convert from pixel number to meters
+            x = point[0]
+            y = point[1]
+            x = (x - 990)*0.00044
+            y = (y - 540)*0.00044
+            dummy = Point32()
+            dummy.x = x
+            dummy.y = y
+            dummy.z = 0
+            points2.append(dummy)
+        
+        if len(points) !=0:
+            pc = PointCloud()
+            pc.header.stamp = self.last_frame_stamp
+            pc.header.frame_id = "thorvald_001/kinect2_rgb_optical_frame"
+            pc.points = points2
+            self.pcPub.publish(pc)
+        
   
     def theMonsterBookOfMonsters(self,  cv_image):
         
@@ -228,56 +279,9 @@ class GreenMask:
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
         cv2.namedWindow("FinalOutput")
         cv2.imshow("FinalOutput",  cv_image)
-        #
-        #
         
-        
-#         #BGR space
-#        b, g, r = cv2.split(masked_img)
-#        cv2.namedWindow("green")
-#        cv2.imshow('green', g)
-#        cv2.namedWindow("blue")
-#        cv2.imshow("blue", b)
-#        cv2.namedWindow("red")
-#        cv2.imshow("red", r)
-#        
-        #HSV space
-        #hsv_image = cv2.cvtColor(masked_img, cv2.COLOR_BGR2HSV)
-        h, s, v = cv2.split(hsv_image)
-        cv2.namedWindow("H")
-        cv2.imshow("H",  h)
-        cv2.namedWindow("S")
-        cv2.imshow("S",  s)
-        cv2.namedWindow("V")
-        cv2.imshow("V",  v)
-#        
-#        #LAB space
-#        lab_image = cv2.cvtColor(masked_img, cv2.COLOR_BGR2LAB)
-#        l, a, b = cv2.split(lab_image)
-#        cv2.namedWindow("L(lab)")
-#        cv2.imshow("L(lab)",  l)
-#        cv2.namedWindow("A(lab)")
-#        cv2.imshow("A(lab)",  a)
-#        cv2.namedWindow("B(lab)")
-#        cv2.imshow("B(lab)",  b)
-#        #Template Matching
-#        path = os.path.dirname(os.path.abspath(__file__))
-#        print(path)
-#        template = cv2.imread(path + '/temp4.png',cv2.IMREAD_COLOR)
-#        #cv2.imshow("Template", template)
-#        template_shape = template.shape
-#        #template = template.astype(numpy.uint8)
-#        h,  w = (template_shape[0], template_shape[1])
-#        image_for_matching = cv_image.copy()
-#    
-#        # Apply template Matching
-#        res = cv2.matchTemplate(masked_img,template,cv2.TM_CCOEFF_NORMED)
-#        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-#        top_left = min_loc
-#        bottom_right = (top_left[0] + w, top_left[1] + h)
-#        cv2.rectangle(image_for_matching,top_left, bottom_right, 255, 2)
-#    
-#        cv2.imshow("Matching", image_for_matching)
+        self.whereToSpray(ultimate_mask, cv_image)
+
         
     
     def detectionGrownLettice(self,  cv_image):
@@ -313,10 +317,6 @@ class GreenMask:
 #        cv2.namedWindow("HSVcabbage")
 #        cv2.imshow("HSVcabbage",  cabbageMask)
     
-        #Display original image
-#        cv2.namedWindow("Original")
-#        cv2.imshow("Original",  cv_image)
-    
         #This is just for storing and output for now
         weedMask = allGreenMask
         #Do logic on mask and display final mask
@@ -334,9 +334,7 @@ class GreenMask:
         cv2.namedWindow("FinalOutput")
         cv2.imshow("FinalOutput",  cv_image)
     
-        #For diagnosic reasons only
-        h, s, v = cv2.split(hsv_image)
-
+        self.whereToSpray(weedMask,  cv_image)
 
 if __name__ == '__main__':
     #init a node
