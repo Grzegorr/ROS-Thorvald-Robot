@@ -118,8 +118,8 @@ class GreenMask:
         #Colour masked areas red
         indices = numpy.where(weedMask==255)
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
-#        cv2.namedWindow("FinalOutput")
-#        cv2.imshow("FinalOutput",  cv_image)
+        cv2.namedWindow("FinalOutput")
+        cv2.imshow("FinalOutput",  cv_image)
         
         self.whereToSpray(weedMask, cv_image)
         
@@ -163,8 +163,8 @@ class GreenMask:
             x = int(point[0])
             y = int(point[1])
             publishable_points.append([x, y])
-            final_image	=	cv2.circle(final_image, (x, y), 10,(200, 0, 200),  thickness = -1)
-        cv2.imshow("Final Output. Red - weed belief mask, purple - points to spray.",  final_image)
+            final_image	=	cv2.circle(final_image, (x, y), 10,(150, 0, 150),  thickness = -1)
+        cv2.imshow("Blobs",  final_image)
         self.publishPointCloud(publishable_points)
         
     def publishPointCloud(self, points):
@@ -193,7 +193,7 @@ class GreenMask:
         
         cv_image = cv2.blur(cv_image,  (5, 5))
         hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-#        cv2.imshow("Original",  cv_image)
+        cv2.imshow("Original",  cv_image)
         
         #Boundriec for removing some weeds
         lower_green = numpy.array([50,20,20])
@@ -201,8 +201,8 @@ class GreenMask:
     
         #applaying the green mask for all plants
         allGreenMask = cv2.inRange(hsv_image, lower_green, upper_green)
-#        cv2.namedWindow("HSVgreen")
-#        cv2.imshow("HSVgreen",  allGreenMask)
+        cv2.namedWindow("HSVgreen")
+        cv2.imshow("HSVgreen",  allGreenMask)
         
         #colour removed weeds
         lower_green = numpy.array([30,20,20])
@@ -212,7 +212,7 @@ class GreenMask:
         weed = cv2.dilate(weed,kernel,iterations = 1)
         kernel = numpy.ones((5,5),numpy.uint8)
         weed = cv2.erode(weed,kernel,iterations = 3)
-#        cv2.imshow("ColourRemovedWeeds",  weed)
+        cv2.imshow("ColourRemovedWeeds",  weed)
         
         
         
@@ -251,17 +251,17 @@ class GreenMask:
                 cv2.line(allGreenMask, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
                 cv2.line(gray, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
                 cv2.line(weed, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-#        cv2.imshow("Line",  gray)
+        cv2.imshow("Line",  gray)
         
         kernel = numpy.ones((5,5),numpy.uint8)
         allGreenMask = cv2.erode(allGreenMask,kernel,iterations = 1)
         allGreenMask = cv2.dilate(allGreenMask,kernel,iterations = 1)
         
         
-#        cv2.imshow("New Green Mask", allGreenMask)
+        cv2.imshow("New Green Mask", allGreenMask)
         
         masked_img = cv2.bitwise_and(cv_image, cv_image , mask=allGreenMask)
-#        cv2.imshow("Masked", masked_img)
+        cv2.imshow("Masked", masked_img)
         
         kernel2 = numpy.array([[0, 0, 0, 0, 0, 0, 0], 
                         [0, 0, 0, 0, 0, 0, 0], 
@@ -270,15 +270,15 @@ class GreenMask:
                         [0, 0, 0, 0, 0, 0, 0]], dtype = numpy.uint8)
 
         allGreenMask = cv2.erode(allGreenMask,kernel2,iterations = 3)
-#        cv2.imshow("Newest Green Mask", allGreenMask)
+        cv2.imshow("Newest Green Mask", allGreenMask)
         
         #just making an array for new masks
         ultimate_mask = weed
         cv2.bitwise_or(weed, allGreenMask , ultimate_mask)
         indices = numpy.where(ultimate_mask==255)
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
-#        cv2.namedWindow("FinalOutput")
-#        cv2.imshow("FinalOutput",  cv_image)
+        cv2.namedWindow("FinalOutput")
+        cv2.imshow("FinalOutput",  cv_image)
         
         self.whereToSpray(ultimate_mask, cv_image)
 
@@ -331,8 +331,8 @@ class GreenMask:
         #Colour masked areas red
         indices = numpy.where(weedMask==255)
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
-#        cv2.namedWindow("FinalOutput")
-#        cv2.imshow("FinalOutput",  cv_image)
+        cv2.namedWindow("FinalOutput")
+        cv2.imshow("FinalOutput",  cv_image)
     
         self.whereToSpray(weedMask,  cv_image)
 

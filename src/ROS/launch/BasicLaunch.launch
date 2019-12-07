@@ -18,15 +18,6 @@
 	<!-- Running base_move node -->
 	<include file="$(find uol_cmp9767m_tutorial)/launch/move_base.launch" />
 
-	<!-- Running base_move node -->
-	<include file="$(find uol_cmp9767m_tutorial)/launch/move_base2.launch" />
-	
-
-        <!-- Run the week 2 controller 
-        <node name="controller" pkg="ROS" type="controller_week2.py" />
-	-->
-
-
 </launch>
 
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #This function is publishing PoseStamped type messages 
+import roslib; roslib.load_manifest('ROS')
 #import std_srvs
 import rospy
 #import math
 #import tf
-import numpy
 import std_msgs.msg
 import geometry_msgs.msg
 import move_base_msgs.msg
@@ -23,10 +23,8 @@ class Controller:
         self.publisher = rospy.Publisher('/move_base/goal', move_base_msgs.msg.MoveBaseActionGoal, queue_size=1,  latch='true')
         #publisher to publish camera mode
         self.publisher2 = rospy.Publisher('/camera_mode', std_msgs.msg.String, queue_size=1,  latch='true')
-        #publisher to publish starting amcl pose to avoid amcl stuck with non-zero rotation in a square map
-        amclPub = rospy.Publisher('/initialpose',  geometry_msgs.msg.PoseWithCovarianceStamped,  queue_size = 1,  latch = "true")
-        amclPose = self.buildAMCLPose()
-        amclPub.publish(amclPose)
+       ##Listener for the current pose
+        ##rospy.Subscriber('/amcl_pose',  geometry_msgs.msg.PoseStamped, self.callback)
         
         #Load waypoints depending on a rout cose by the user
         if path == "Test Path":
@@ -38,7 +36,7 @@ class Controller:
             [0, 0, 0, 0, 0, 0, 1, "OFF"]
             ]
             
-        if path == "Full_Path":
+        if path == "Grzadki":
             self.waypoints = [  
             [7, 0, 0, 0, 0, 0, 1,  "OFF"], 
             [7, -3.75, 0, 0, 0, 1, 0,  "Young Lettice"],
@@ -123,25 +121,18 @@ class Controller:
         p1.pose.orientation.x = ortx
         p1.pose.orientation.y = orty
         p1.pose.orientation.z = ortz
-        p1.pose.orientation.w = ortw        
-        goal.goal.target_pose = p1
-        self.publisher.publish(goal)
+        p1.pose.orientation.w = ortw
         
-    def buildAMCLPose(self):
-        p = geometry_msgs.msg.PoseWithCovarianceStamped()
-        p.header.stamp = rospy.Time()
-        p.header.frame_id = "map"
-        p.pose.covariance = numpy.zeros(36)
-        p.pose.pose.position.x = 5
-        p.pose.pose.position.y = 0
-        p.pose.pose.position.z = 0
-        p.pose.pose.orientation.w = 1
-        return p
+        goal.goal.target_pose = p1
 
+        self.publisher.publish(goal)
+
+    def callback(self,  data):
+        self.current_pose = data
         
 if __name__ == '__main__':
     rospy.init_node('path_controller')
-    C = Controller("Full_Path")
+    C = Controller("Grzadki")
     while(1):
         C.driveAround()
     rospy.spin()
