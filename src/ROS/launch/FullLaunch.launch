@@ -28,7 +28,7 @@
 	<node pkg="ROS" type="weedMap.py" name="weed_map_node" output="screen" />
 
 	<!-- Running node to produce a weed map -->
-	<node pkg="rviz" type="rviz" name="rviz" />
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_name)/rviz/rvizConfiguration.rviz" />
 
 </launch>
 
