@@ -31,15 +31,19 @@ class GreenMask:
         #tf listener
         self.tfListener = tf.TransformListener()
     
+    
     #callback to handle next frame
     def callback(self, data):
         #Get last frame timestamp
         self.last_frame_stamp = data.header.stamp
-        (trans,  rot) = self.tfListener.lookupTransform('thorvald_001/kinect2_rgb_optical_frame',  "map", self.last_frame_stamp)
+        #try to lookup transform to "map" frame at a tome of picture captue, if cant drop the frame
+        try:
+            (trans,  rot) = self.tfListener.lookupTransform('thorvald_001/kinect2_rgb_optical_frame',  "map", self.last_frame_stamp)
+        except (tf.ExtrapolationException):
+            print("Frame droped due to unknown tf at time of picture timestamp.")
+            return
+        #publish transform
         transform_to_send = Transform()
-#        transform_to_send.header.stamp = rospy.Time()
-#        transform_to_send.child_frame_id = "thorvald_001/kinect2_rgb_optical_frame"
-#        transform_to_send.header.frame_id = "map"
         transform_to_send.translation.x = trans[0]
         transform_to_send.translation.y = trans[1]
         transform_to_send.translation.z = trans[2]
@@ -48,7 +52,6 @@ class GreenMask:
         transform_to_send.rotation.z = rot[2]
         transform_to_send.rotation.w = rot[3]
         self.transPub.publish(transform_to_send)
-        #print(self.last_frame_stamp)
         #transfer image from ROS file system to openCV file
         cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         if self.detectionMode == "Young Lettice":
@@ -56,7 +59,7 @@ class GreenMask:
         if self.detectionMode == "Grown Lettice":
             self.detectionGrownLettice(cv_image)
         if self.detectionMode == "Anion":
-            self.theMonsterBookOfMonsters(cv_image)
+            self.detectionAnion(cv_image)
         if self.detectionMode == "OFF":
             self.OFF(cv_image)
         cv2.waitKey(1)
@@ -73,6 +76,7 @@ class GreenMask:
         cv2.imshow("Original - detection OFF",  cv_image)
 
     
+    #detection for first two rows from the left
     def detectionYoungLettice(self,  cv_image): 
         #Bluring the image
         cv_image = cv2.blur(cv_image,  (5, 5))
@@ -82,11 +86,8 @@ class GreenMask:
         #Boundriec for detecting all plants as green colour
         lower_green = numpy.array([35,20,20])
         upper_green = numpy.array([200,255,255])
-    
         #applaying the green mask for all plants
         allGreenMask = cv2.inRange(hsv_image, lower_green, upper_green)
-#        cv2.namedWindow("HSVgreen")
-#        cv2.imshow("HSVgreen",  allGreenMask)
     
         #Boundries and masking for cabbage only
         lower_cabbage = numpy.array([35,120,20])
@@ -96,13 +97,6 @@ class GreenMask:
         #Dilaute to make safe zone for lettice
         kernel = numpy.ones((5,5),numpy.uint8)
         cabbageMask = cv2.dilate(cabbageMask,kernel,iterations = 3)
-        #Display the mask if wanted
-#        cv2.namedWindow("HSVcabbage")
-#        cv2.imshow("HSVcabbage",  cabbageMask)
-        
-        #Display original image
-#        cv2.namedWindow("Original")
-#        cv2.imshow("Original",  cv_image)
     
         #This is just for storing and output for now
         weedMask = allGreenMask
@@ -112,45 +106,32 @@ class GreenMask:
         kernel = numpy.ones((3,3),numpy.uint8)
         weedMask = cv2.erode(weedMask,kernel,iterations =1)
         weedMask = cv2.dilate(weedMask,kernel,iterations =2)
-#        cv2.namedWindow("weedMask")
-#        cv2.imshow("weedMask",  weedMask)
     
         #Colour masked areas red
         indices = numpy.where(weedMask==255)
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
-#        cv2.namedWindow("FinalOutput")
-#        cv2.imshow("FinalOutput",  cv_image)
         
+        #convert mask to pointcloud and display results
         self.whereToSpray(weedMask, cv_image)
         
+    
+    #runs blob detection on the mask
     def whereToSpray(self, final_mask, final_image):    
         # Setup SimpleBlobDetector parameters.
         params = cv2.SimpleBlobDetector_Params()
-         
-#        # Change thresholds
-#        params.minThreshold = 10;
-#        params.maxThreshold = 200;
-        
         # Filter by colour.
         params.filterByColor = True
         params.blobColor = 255
-        
         # Filter by Area.
         params.filterByArea = True
         params.minArea = 200
-         
         # Filter by Circularity
         params.filterByCircularity = False
-        params.minCircularity = 0.1
-         
         # Filter by Convexity
         params.filterByConvexity = False
-        params.minConvexity = 0.87
-         
         # Filter by Inertia
         params.filterByInertia = False
-        params.minInertiaRatio = 0.01
-        # Set up the detector with default parameters.
+        # Set up the detector with new parameters
         detector = cv2.SimpleBlobDetector_create(params)
  
         # Detect blobs.
@@ -167,6 +148,7 @@ class GreenMask:
         cv2.imshow("Final Output. Red - weed belief mask, purple - points to spray.",  final_image)
         self.publishPointCloud(publishable_points)
         
+    #construct and publish the point cloud
     def publishPointCloud(self, points):
         points2 = []
         for point in points:
@@ -178,7 +160,7 @@ class GreenMask:
             dummy = Point32()
             dummy.x = x
             dummy.y = y
-            dummy.z = 0
+            dummy.z = 0.5
             points2.append(dummy)
         
         if len(points) !=0:
@@ -189,37 +171,28 @@ class GreenMask:
             self.pcPub.publish(pc)
         
   
-    def theMonsterBookOfMonsters(self,  cv_image):
-        
+    #detection algorithm for two rows on the left of the map
+    def detectionAnion(self,  cv_image):
+        #blur and convert to hsv colour space
         cv_image = cv2.blur(cv_image,  (5, 5))
         hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-#        cv2.imshow("Original",  cv_image)
         
-        #Boundriec for removing some weeds
-        lower_green = numpy.array([50,20,20])
-        upper_green = numpy.array([200,100,255])
-    
-        #applaying the green mask for all plants
-        allGreenMask = cv2.inRange(hsv_image, lower_green, upper_green)
-#        cv2.namedWindow("HSVgreen")
-#        cv2.imshow("HSVgreen",  allGreenMask)
-        
-        #colour removed weeds
+        #mask for color removing some weeds
         lower_green = numpy.array([30,20,20])
         upper_green = numpy.array([50,255,255])
-        weed = cv2.inRange(hsv_image, lower_green, upper_green)
+        colour_removed_weed = cv2.inRange(hsv_image, lower_green, upper_green)
         kernel = numpy.ones((5,5),numpy.uint8)
-        weed = cv2.dilate(weed,kernel,iterations = 1)
-        kernel = numpy.ones((5,5),numpy.uint8)
-        weed = cv2.erode(weed,kernel,iterations = 3)
-#        cv2.imshow("ColourRemovedWeeds",  weed)
+        colour_removed_weed = cv2.dilate(colour_removed_weed,kernel,iterations = 1)
+        colour_removed_weed = cv2.erode(colour_removed_weed,kernel,iterations = 3)
         
+        #mask for green, but leaving out some weeds which can be colour separated with block of code above
+        lower_green = numpy.array([50,20,20])
+        upper_green = numpy.array([200,100,255])
+        selectiveGreenMask = cv2.inRange(hsv_image, lower_green, upper_green)
         
-        
-        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-        lines = cv2.HoughLines(allGreenMask, 1 , numpy.pi / 180, 900, None, 0, 0)
-        #print(len(lines))
-    
+
+        #Detect very long lines and draw first of them with a large thickness
+        lines = cv2.HoughLines(selectiveGreenMask, 1 , numpy.pi / 180, 900, 0, 0, 0, 0.2)    
         if lines is not None:
             print("Lines 2: " + str(len(lines)))
             for i in [0]:
@@ -231,13 +204,16 @@ class GreenMask:
                 y0 = b * rho
                 pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
                 pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
-                cv2.line(allGreenMask, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-                cv2.line(gray, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-                cv2.line(weed, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-                
-        lines = cv2.HoughLines(allGreenMask, 1 , numpy.pi / 180, 800, None, 0, 0)
+                cv2.line(selectiveGreenMask, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
+                cv2.line(colour_removed_weed, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
+        else:
+            #probably just getting on the field so drop the frame(detection would not work properly)
+            print("Weed Detection: 1st row of anions was not found. Probably entering the field, no weeds will be detected.")
+            cv2.imshow("Final Output. Red - weed belief mask, purple - points to spray.",  cv_image)
+            return
         
-    
+        #same operation with hough line detection for 2nd row
+        lines = cv2.HoughLines(selectiveGreenMask, 1 , numpy.pi / 180, 800, 0, 0, 0, 0.2)
         if lines is not None:
             for i in [0]:
                 rho = lines[i][0][0]
@@ -248,41 +224,36 @@ class GreenMask:
                 y0 = b * rho
                 pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
                 pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
-                cv2.line(allGreenMask, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-                cv2.line(gray, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-                cv2.line(weed, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
-#        cv2.imshow("Line",  gray)
+                cv2.line(selectiveGreenMask, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
+                cv2.line(colour_removed_weed, pt1, pt2, (0,0,0), 250, cv2.LINE_AA)
+        else:
+            #probably just getting on the field so drop the frame(detection would not work properly)
+            print("Weed Detection: 2nd row of anions was not found. Probably entering the field, no weeds will be detected.")
+            cv2.imshow("Final Output. Red - weed belief mask, purple - points to spray.",  cv_image)
+            return
         
+        #get rid of some noise
         kernel = numpy.ones((5,5),numpy.uint8)
-        allGreenMask = cv2.erode(allGreenMask,kernel,iterations = 1)
-        allGreenMask = cv2.dilate(allGreenMask,kernel,iterations = 1)
+        selectiveGreenMask = cv2.erode(selectiveGreenMask,kernel,iterations = 1)
+        selectiveGreenMask = cv2.dilate(selectiveGreenMask,kernel,iterations = 1)
         
-        
-#        cv2.imshow("New Green Mask", allGreenMask)
-        
-        masked_img = cv2.bitwise_and(cv_image, cv_image , mask=allGreenMask)
-#        cv2.imshow("Masked", masked_img)
-        
+        #erosion in horizontal direction only to save anions going verticalt-ish out of the rows
         kernel2 = numpy.array([[0, 0, 0, 0, 0, 0, 0], 
                         [0, 0, 0, 0, 0, 0, 0], 
                         [1, 1, 1, 1, 1, 1, 1], 
                         [0, 0, 0, 0, 0, 0, 0], 
                         [0, 0, 0, 0, 0, 0, 0]], dtype = numpy.uint8)
+        selectiveGreenMask = cv2.erode(selectiveGreenMask,kernel2,iterations = 3)
 
-        allGreenMask = cv2.erode(allGreenMask,kernel2,iterations = 3)
-#        cv2.imshow("Newest Green Mask", allGreenMask)
         
         #just making an array for new masks
-        ultimate_mask = weed
-        cv2.bitwise_or(weed, allGreenMask , ultimate_mask)
+        ultimate_mask = colour_removed_weed
+        cv2.bitwise_or(colour_removed_weed, selectiveGreenMask , ultimate_mask)
         indices = numpy.where(ultimate_mask==255)
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
-#        cv2.namedWindow("FinalOutput")
-#        cv2.imshow("FinalOutput",  cv_image)
         
+        #blob detection on the resulting mask
         self.whereToSpray(ultimate_mask, cv_image)
-
-        
     
     def detectionGrownLettice(self,  cv_image):
         #Bluring the image
@@ -290,14 +261,10 @@ class GreenMask:
         #changing to HSV colourspace
         hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
     
-        #Boundriec for detecting all plants as green colour
+        #detecting all plants as green colour
         lower_green = numpy.array([35,20,20])
         upper_green = numpy.array([65,255,255])
-    
-        #applaying the green mask for all plants
         allGreenMask = cv2.inRange(hsv_image, lower_green, upper_green)
-#        cv2.namedWindow("HSVgreen")
-#        cv2.imshow("HSVgreen",  allGreenMask)
     
         #Boundries and masking for cabbage only
         lower_cabbage = numpy.array([35,120,20])
@@ -313,9 +280,6 @@ class GreenMask:
         #diluting even more more to conteract erosion and give safe space around crops
         kernel = numpy.ones((3,3),numpy.uint8)
         cabbageMask = cv2.dilate(cabbageMask,kernel,iterations = 25)
-        #Display the mask if wanted
-#        cv2.namedWindow("HSVcabbage")
-#        cv2.imshow("HSVcabbage",  cabbageMask)
     
         #This is just for storing and output for now
         weedMask = allGreenMask
@@ -325,20 +289,16 @@ class GreenMask:
         kernel = numpy.ones((3,3),numpy.uint8)
         weedMask = cv2.erode(weedMask,kernel,iterations =1)
         weedMask = cv2.dilate(weedMask,kernel,iterations =2)
-#        cv2.namedWindow("weedMask")
-#        cv2.imshow("weedMask",  weedMask)
     
         #Colour masked areas red
         indices = numpy.where(weedMask==255)
         cv_image[indices[0], indices[1], :] = [0, 0, 255]
-#        cv2.namedWindow("FinalOutput")
-#        cv2.imshow("FinalOutput",  cv_image)
     
         self.whereToSpray(weedMask,  cv_image)
 
 if __name__ == '__main__':
     #init a node
-    rospy.init_node('weedDetection')
+    rospy.init_node('weed_detection')
     #Get object of a class above
     GM = GreenMask()
     rospy.spin()

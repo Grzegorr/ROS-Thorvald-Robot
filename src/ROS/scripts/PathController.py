@@ -86,22 +86,23 @@ class Controller:
             [-7, -3.75, 0, 0, 0, 1, 0,  "Anion"]
             ]
             
-            
+    
+    #publishes subsequent waypoins and camera modes
     def driveAround(self):
         #Number of wypoints
         n = len(self.waypoints)
-        print("There is " + str(n) + " waypoints.")
+        print("Path Controller: There is " + str(n) + " waypoints in the programmed route.")
         for i in range(0, n):
             print(i)
             self.publishGoal(self.waypoints[i][0], self.waypoints[i][1], self.waypoints[i][2], self.waypoints[i][3], self.waypoints[i][4], self.waypoints[i][5], self.waypoints[i][6],  i)
-            print("Waiting to reach the goal.")
+            print("Path Controller: Waiting to reach the goal.")
             rospy.wait_for_message('/move_base/result', move_base_msgs.msg.MoveBaseActionResult)
             if self.waypoints[i][7] != "NoChange":
                 self.publisher2.publish(self.waypoints[i][7])
-            print("Goal reached.")
+            print("Path Controller: Goal reached.")
             
             
-    
+    #publishes a pose which is tobe a goal of move_base
     def publishGoal(self, x, y, z, ortx, orty, ortz, ortw,  i):
         
         goal = move_base_msgs.msg.MoveBaseActionGoal()
@@ -126,7 +127,8 @@ class Controller:
         p1.pose.orientation.w = ortw        
         goal.goal.target_pose = p1
         self.publisher.publish(goal)
-        
+    
+    #puts together pose, to be published as initial pose to amcl
     def buildAMCLPose(self):
         p = geometry_msgs.msg.PoseWithCovarianceStamped()
         p.header.stamp = rospy.Time()

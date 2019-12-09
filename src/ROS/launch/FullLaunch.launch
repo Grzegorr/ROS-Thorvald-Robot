@@ -15,8 +15,20 @@
 	<!-- Running AMCL -->
 	<include file="$(find uol_cmp9767m_tutorial)/launch/amcl.launch" />
 
-	<!-- Running base_move node -->
+	<!-- Running move_base node -->
 	<include file="$(find uol_cmp9767m_tutorial)/launch/move_base.launch" />
+
+	<!-- Running node for weed detection node -->
+	<node pkg="ROS" type="PathController.py" name="path_controller" output="screen" />
+
+	<!-- Running node which detects weed -->
+	<node pkg="my_openCV" type="weedDetection.py" name="weed_detection" output="screen" />
+
+	<!-- Running node to produce a weed map -->
+	<node pkg="ROS" type="weedMap.py" name="weed_map_node" output="screen" />
+
+	<!-- Running node to produce a weed map -->
+	<node pkg="rviz" type="rviz" name="rviz" />
 
 </launch>
 
