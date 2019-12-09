@@ -18,7 +18,7 @@
 	<!-- Running move_base node -->
 	<include file="$(find uol_cmp9767m_tutorial)/launch/move_base.launch" />
 
-	<!-- Running node for weed detection node -->
+	<!-- Running node for path and camera control -->
 	<node pkg="ROS" type="PathController.py" name="path_controller" output="screen" />
 
 	<!-- Running node which detects weed -->
